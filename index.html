@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#141821">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="STH">
+<title>STH Site App</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="assets/sth-logo-white.png">
+<link rel="apple-touch-icon" href="assets/sth-logo-white.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="shared/styles.css">
+<style>
+  body{
+    background:var(--black);
+    color:var(--cream);
+    font-family:var(--sans);
+    min-height:100vh;
+    overflow-x:hidden;
+  }
+
+  .launcher{
+    min-height:100vh;
+    display:flex;
+    flex-direction:column;
+    position:relative;
+    max-width:480px;
+    margin:0 auto;
+  }
+
+  /* Subtle noise texture so the dark slab doesn't feel flat */
+  .launcher::before{
+    content:'';
+    position:absolute;
+    inset:0;
+    pointer-events:none;
+    z-index:0;
+    opacity:.35;
+    background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.75' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+  .launcher > *{position:relative;z-index:1}
+
+  .launcher-hero{
+    padding:56px 26px 30px;
+  }
+  .launcher-brand{
+    display:flex;
+    align-items:flex-end;
+    gap:14px;
+    margin-bottom:36px;
+  }
+  .launcher-logo{
+    height:64px;
+    width:auto;
+    display:block;
+  }
+  .launcher-app-label{
+    font-size:10px;
+    font-weight:600;
+    letter-spacing:.18em;
+    text-transform:uppercase;
+    color:var(--cream-muted);
+    padding-bottom:6px;
+    border-left:1px solid rgba(247,244,238,.18);
+    padding-left:14px;
+  }
+
+  .launcher-headline{
+    font-family:var(--sans);
+    font-weight:800;
+    font-size:28px;
+    line-height:1.15;
+    letter-spacing:-0.02em;
+    color:var(--cream);
+    margin-bottom:14px;
+  }
+  .launcher-headline em{
+    font-style:normal;
+    color:var(--yellow);
+    font-weight:800;
+  }
+  .launcher-greeting{
+    font-size:13px;
+    color:var(--cream-muted);
+    font-weight:400;
+    line-height:1.55;
+    max-width:320px;
+  }
+
+  .launcher-divider{
+    height:1px;
+    background:rgba(247,244,238,.1);
+    margin:0 26px;
+  }
+
+  .launcher-body{
+    flex:1;
+    padding:26px 26px 18px;
+    display:flex;
+    flex-direction:column;
+    background:rgba(247,244,238,.04);
+  }
+  .launcher-tile{
+    display:flex;
+    align-items:center;
+    gap:20px;
+    padding:24px 4px;
+    cursor:pointer;
+    border-bottom:1px solid rgba(247,244,238,.08);
+    transition:padding .2s ease;
+    color:var(--cream);
+    text-align:left;
+    width:100%;
+  }
+  .launcher-tile:last-of-type{border-bottom:none}
+  .launcher-tile:hover{padding-left:8px}
+  .launcher-tile:hover .tile-arrow{transform:translateX(4px);color:var(--yellow)}
+  .launcher-tile:active{opacity:.7}
+
+  .tile-icon{
+    width:46px;
+    height:46px;
+    flex-shrink:0;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .tile-icon svg{width:30px;height:30px;display:block}
+  .tile-text{flex:1;min-width:0}
+  .tile-title{
+    font-family:var(--sans);
+    font-weight:800;
+    font-size:20px;
+    letter-spacing:-0.01em;
+    color:var(--cream);
+    line-height:1.1;
+    margin-bottom:3px;
+  }
+  .tile-title em{font-style:normal;color:var(--yellow);font-weight:800}
+  .tile-sub{
+    font-size:12px;
+    color:var(--cream-muted);
+    font-weight:400;
+    line-height:1.4;
+    letter-spacing:.01em;
+  }
+  .tile-arrow{
+    color:var(--cream-muted);
+    font-size:22px;
+    font-weight:300;
+    line-height:1;
+    transition:transform .2s ease, color .2s ease;
+  }
+
+  .launcher-footer{
+    padding:18px 26px 32px;
+    text-align:left;
+  }
+  .launcher-footer .last-used{
+    font-size:10px;
+    color:var(--cream-muted);
+    letter-spacing:.14em;
+    text-transform:uppercase;
+    font-weight:600;
+  }
+  .launcher-footer .last-used b{color:var(--cream);font-weight:600}
+</style>
+</head>
+<body>
+
+<div class="launcher">
+  <div class="launcher-hero">
+    <div class="launcher-brand">
+      <img src="assets/sth-logo-white.png" alt="STH Piling" class="launcher-logo" />
+      <span class="launcher-app-label">Site App</span>
+    </div>
+    <h1 class="launcher-headline" id="greeting">Welcome.</h1>
+    <p class="launcher-greeting">Pick a module to get started. Your work syncs back to the office automatically.</p>
+  </div>
+
+  <div class="launcher-divider"></div>
+
+  <div class="launcher-body">
+    <button class="launcher-tile" data-module="cartage">
+      <div class="tile-icon">
+        <svg viewBox="0 0 32 32" xmlns="http://www.w3.org/2000/svg">
+          <path d="M2 8 L18 8 L18 22 L2 22 Z" stroke="#F5C800" stroke-width="1.6" fill="none"/>
+          <path d="M18 12 L24 12 L30 18 L30 22 L18 22 Z" stroke="#F5C800" stroke-width="1.6" fill="none"/>
+          <circle cx="8" cy="24" r="2.5" fill="#F5C800"/>
+          <circle cx="24" cy="24" r="2.5" fill="#F5C800"/>
+        </svg>
+      </div>
+      <div class="tile-text">
+        <div class="tile-title"><em>Cartage</em></div>
+        <div class="tile-sub">Truck loads &amp; cartage register</div>
+      </div>
+      <div class="tile-arrow">→</div>
+    </button>
+
+    <button class="launcher-tile" data-module="piling">
+      <div class="tile-icon">
+        <svg viewBox="0 0 16 32" xmlns="http://www.w3.org/2000/svg">
+          <path d="M 5 2 L 11 2 L 11 24 L 14 24 L 8 30 L 2 24 L 5 24 Z" fill="#F5C800"/>
+          <path d="M 5 5 Q 13 9, 5 13 Q 13 17, 5 21" stroke="#2E3038" stroke-width="2" fill="none" stroke-linecap="round"/>
+        </svg>
+      </div>
+      <div class="tile-text">
+        <div class="tile-title"><em>Piling</em></div>
+        <div class="tile-sub">Pile logs &amp; schedule tracking</div>
+      </div>
+      <div class="tile-arrow">→</div>
+    </button>
+  </div>
+
+  <div class="launcher-footer">
+    <div class="last-used" id="lastUsed"></div>
+  </div>
+</div>
+
+<script>
+  // Time-of-day greeting
+  (function setGreeting(){
+    const h = new Date().getHours();
+    let g = 'Good morning';
+    if (h >= 12 && h < 17) g = 'Good afternoon';
+    else if (h >= 17 || h < 5) g = 'Good evening';
+
+    const lastUser = localStorage.getItem('sth_last_user');
+    const greetEl = document.getElementById('greeting');
+    if (lastUser) {
+      greetEl.innerHTML = `${g}, <em>${lastUser}.</em>`;
+    } else {
+      greetEl.innerHTML = `${g}.`;
+    }
+  })();
+
+  // Last opened module
+  (function setLastUsed(){
+    const last = localStorage.getItem('sth_last_module');
+    const lastTime = localStorage.getItem('sth_last_module_time');
+    const el = document.getElementById('lastUsed');
+    if (last && lastTime) {
+      const t = new Date(parseInt(lastTime, 10));
+      const now = new Date();
+      const sameDay = t.toDateString() === now.toDateString();
+      const yesterday = new Date(now); yesterday.setDate(now.getDate() - 1);
+      const isYesterday = t.toDateString() === yesterday.toDateString();
+      const timeStr = t.toLocaleTimeString('en-AU', {hour:'numeric', minute:'2-digit', hour12:true}).toLowerCase();
+      const dayStr = sameDay ? 'Today' : isYesterday ? 'Yesterday' : t.toLocaleDateString('en-AU');
+      const moduleName = last.charAt(0).toUpperCase() + last.slice(1);
+      el.innerHTML = `Last opened — <b>${moduleName}</b> · ${dayStr} ${timeStr}`;
+    }
+  })();
+
+  // Tile clicks — record selection and navigate
+  document.querySelectorAll('.launcher-tile').forEach(tile => {
+    tile.addEventListener('click', () => {
+      const mod = tile.dataset.module;
+      localStorage.setItem('sth_last_module', mod);
+      localStorage.setItem('sth_last_module_time', Date.now().toString());
+      window.location.href = `modules/${mod}/`;
+    });
+  });
+
+  // Service worker registration
+  if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+      navigator.serviceWorker.register('sw.js').catch(err => console.warn('SW registration failed', err));
+    });
+  }
+</script>
+</body>
+</html>
