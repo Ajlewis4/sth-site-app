@@ -27,7 +27,6 @@ import {
 } from 'https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore.js';
 
 // ⚠️ PASTE YOUR EXISTING CARTAGE FIREBASE CONFIG HERE
-const firebaseConfig = {
   const firebaseConfig = {
   apiKey: "AIzaSyDmUGL8Tyfy74OMjgaBZlFK-PTFG3AYYK0",
   authDomain: "sth-cartage.firebaseapp.com",
