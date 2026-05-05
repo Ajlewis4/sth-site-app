@@ -370,7 +370,7 @@ async function renderDrilling(jobId, pileId) {
       <div class="design-row"><span>Reo cage</span><b>${pile.reoCage || '—'}</b></div>
       <div class="design-row"><span>Reo length</span><b>${pile.reoLength || '—'}m</b></div>
       <div class="design-row"><span>Projection</span><b>${pile.projection || '—'}mm</b></div>
-      <div class="design-row"><span>Design concrete</span><b>${pile.designConcrete || '—'} m³</b></div>
+      <div class="design-row"><span>Design concrete</span><b>${pile.designConcrete != null ? pile.designConcrete.toFixed(2) : '—'} m³</b></div>
     </div>
 
     <div class="drill-body">
@@ -391,10 +391,10 @@ async function renderDrilling(jobId, pileId) {
           <div class="input-tile">
             <div class="input-label">Actual concrete</div>
             <div class="input-value">
-              <input type="number" id="actual-concrete" step="0.1" inputmode="decimal" value="${pile.actualConcrete ?? ''}" placeholder="${pile.designConcrete || ''}" ${isDone ? 'disabled' : ''} />
+              <input type="number" id="actual-concrete" step="0.1" inputmode="decimal" value="${pile.actualConcrete ?? ''}" placeholder="${pile.designConcrete != null ? pile.designConcrete.toFixed(2) : ''}" ${isDone ? 'disabled' : ''} />
               <span class="input-unit">m³</span>
             </div>
-            ${!isDone ? `<button class="use-design" data-target="actual-concrete" data-value="${pile.designConcrete}">Use design (${pile.designConcrete} m³)</button>` : ''}
+            ${!isDone ? `<button class="use-design" data-target="actual-concrete" data-value="${pile.designConcrete != null ? pile.designConcrete.toFixed(2) : ''}">Use design (${pile.designConcrete != null ? pile.designConcrete.toFixed(2) : '—'} m³)</button>` : ''}
           </div>
         </div>
 
@@ -440,8 +440,8 @@ function renderDelta(label, actual, design, unit) {
   return `
     <div class="delta-row">
       <span class="delta-label">${label}</span>
-      <span class="delta-actual">${actual}${unit}</span>
-      <span class="delta-vs">vs ${design}${unit}</span>
+      <span class="delta-actual">${actual.toFixed(2)}${unit}</span>
+      <span class="delta-vs">vs ${design.toFixed(2)}${unit}</span>
       <span class="delta-value ${deltaClass}">${deltaStr}</span>
     </div>
   `;
