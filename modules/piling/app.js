@@ -137,6 +137,9 @@ async function renderJobs() {
     <div class="job-list" id="job-list">
       <div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Loading jobs…</div>
     </div>
+    <div class="office-link-row">
+      <a href="office.html" class="office-link">Office tools →</a>
+    </div>
   `;
 
   document.getElementById('op-switch').addEventListener('click', () => {
@@ -263,11 +266,10 @@ async function renderPileList(jobId) {
       listEl.innerHTML = `
         <div class="empty">
           <h3>No piles in schedule yet</h3>
-          <p>Office hasn't uploaded the pile schedule. For testing, you can seed sample piles.</p>
-          <button class="btn" id="seed-btn">Seed 10 test piles</button>
+          <p>Office hasn't uploaded the pile schedule. Use Office tools to upload an xlsx schedule.</p>
+          <a href="office.html" class="btn ghost">Office tools →</a>
         </div>
       `;
-      document.getElementById('seed-btn')?.addEventListener('click', () => seedTestPiles(jobId));
       return;
     }
 

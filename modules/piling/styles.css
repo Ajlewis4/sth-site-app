@@ -172,6 +172,29 @@
   color:var(--muted);
 }
 
+/* Office tools link at bottom of job picker */
+.office-link-row{
+  padding:24px 18px;
+  text-align:center;
+  margin-top:auto;
+}
+.office-link{
+  font-size:11px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  font-weight:700;
+  color:var(--muted);
+  border:1px solid var(--line-2);
+  padding:10px 18px;
+  display:inline-block;
+  background:var(--paper);
+  transition:border-color .15s, color .15s;
+}
+.office-link:hover{
+  border-color:var(--charcoal);
+  color:var(--ink);
+}
+
 /* ============================================================
    Job header (top of pile list)
    ============================================================ */

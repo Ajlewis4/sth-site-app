@@ -1,0 +1,238 @@
+/* ============================================================
+   STH Piling — Office page styles (schedule upload)
+   ============================================================ */
+
+.office-shell{
+  max-width:880px;
+  margin:0 auto;
+  padding:0;
+}
+
+.office-header{
+  background:var(--charcoal);
+  color:#fff;
+  padding:18px 24px;
+  display:flex;
+  align-items:center;
+  gap:18px;
+  border-bottom:3px solid var(--yellow);
+}
+.office-header .crumb{
+  font-size:11px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#bdbfc6;
+  font-weight:600;
+}
+.office-header h1{
+  font-size:18px;
+  font-weight:800;
+  color:#fff;
+  letter-spacing:-0.01em;
+}
+.office-header .badge{
+  margin-left:auto;
+  background:var(--yellow);
+  color:var(--charcoal);
+  font-size:11px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  font-weight:700;
+  padding:4px 10px;
+}
+
+.office-body{
+  padding:24px;
+}
+
+.office-card{
+  background:var(--paper);
+  border:1px solid var(--line);
+  padding:24px;
+  margin-bottom:18px;
+}
+.office-card h2{
+  font-size:13px;
+  font-weight:700;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  margin-bottom:14px;
+}
+
+/* Job picker (office) */
+.office-job-list{
+  display:grid;
+  grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+  gap:10px;
+}
+.office-job-tile{
+  background:#fafafa;
+  border:1px solid var(--line);
+  padding:14px 16px;
+  text-align:left;
+  cursor:pointer;
+  transition:border-color .15s ease;
+  display:flex;
+  flex-direction:column;
+  gap:4px;
+}
+.office-job-tile:hover{border-color:var(--charcoal)}
+.office-job-tile .job-code{
+  font-family:var(--mono);
+  font-size:11px;
+  font-weight:700;
+  color:var(--muted);
+  letter-spacing:.04em;
+}
+.office-job-tile .job-name{
+  font-size:14px;
+  font-weight:700;
+  color:var(--ink);
+  line-height:1.25;
+}
+.office-job-tile .job-status{
+  font-size:11px;
+  color:var(--muted);
+  font-family:var(--mono);
+}
+
+/* Upload zone */
+.upload-zone{
+  border:2px dashed var(--line-2);
+  background:#fafafa;
+  padding:40px 20px;
+  text-align:center;
+  cursor:pointer;
+  transition:border-color .15s, background .15s;
+}
+.upload-zone:hover, .upload-zone.dragover{
+  border-color:var(--yellow);
+  background:var(--yellow-soft);
+}
+.upload-zone .upload-icon{
+  font-size:40px;
+  color:var(--muted);
+  margin-bottom:8px;
+}
+.upload-zone .upload-prompt{
+  font-size:14px;
+  font-weight:700;
+  color:var(--ink);
+}
+.upload-zone .upload-sub{
+  font-size:12px;
+  color:var(--muted);
+  margin-top:4px;
+}
+
+/* Sheet picker */
+.sheet-picker{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  margin-bottom:14px;
+}
+.sheet-btn{
+  background:var(--paper);
+  border:1px solid var(--line-2);
+  padding:10px 18px;
+  font-size:13px;
+  font-weight:600;
+  color:var(--ink);
+  cursor:pointer;
+}
+.sheet-btn.selected{
+  background:var(--yellow);
+  border-color:var(--yellow);
+  color:var(--charcoal);
+}
+
+/* Preview table */
+.preview-summary{
+  display:grid;
+  grid-template-columns:repeat(auto-fit, minmax(140px, 1fr));
+  gap:12px;
+  margin-bottom:18px;
+  padding-bottom:16px;
+  border-bottom:1px solid var(--line);
+}
+.summary-tile{
+  background:#fafafa;
+  border:1px solid var(--line);
+  padding:12px 14px;
+}
+.summary-tile .summary-label{
+  font-size:10px;
+  letter-spacing:.08em;
+  text-transform:uppercase;
+  color:var(--muted);
+  font-weight:600;
+  margin-bottom:4px;
+}
+.summary-tile .summary-value{
+  font-family:var(--mono);
+  font-size:18px;
+  font-weight:800;
+  color:var(--ink);
+}
+
+.preview-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:12px;
+  margin-bottom:18px;
+}
+.preview-table th{
+  text-align:left;
+  padding:8px 10px;
+  background:#f4f4f1;
+  font-size:10px;
+  font-weight:700;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:var(--muted);
+  border-bottom:1px solid var(--line-2);
+  white-space:nowrap;
+}
+.preview-table td{
+  padding:8px 10px;
+  border-bottom:1px solid var(--line);
+  font-family:var(--mono);
+  font-size:12px;
+}
+.preview-table tr:nth-child(even) td{background:#fafafa}
+
+.action-row{
+  display:flex;
+  gap:10px;
+  align-items:center;
+}
+.action-row .spacer{flex:1}
+
+.warning-banner{
+  background:#fff3e0;
+  border:1px solid #f3c98a;
+  padding:10px 14px;
+  font-size:12px;
+  color:#7d4f12;
+  margin-bottom:14px;
+  font-weight:500;
+  line-height:1.5;
+}
+
+.success-banner{
+  background:var(--green-soft);
+  border:1px solid var(--green-border);
+  padding:14px 18px;
+  font-size:14px;
+  color:var(--green);
+  font-weight:700;
+  margin-bottom:14px;
+  line-height:1.5;
+}
+
+/* Hide the file input itself */
+.hidden-file-input{
+  display:none;
+}
