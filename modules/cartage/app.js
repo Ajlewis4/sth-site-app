@@ -4,11 +4,13 @@
 // ============================================
 
 // ---------- Service Worker ----------
-if ('serviceWorker' in navigator) {
-  window.addEventListener('load', () => {
-    navigator.serviceWorker.register('service-worker.js').catch(() => {});
-  });
-}
+// Disabled in unified app — parent /sw.js handles caching.
+// (Original Cartage PWA registered its own SW; not needed here.)
+// if ('serviceWorker' in navigator) {
+//   window.addEventListener('load', () => {
+//     navigator.serviceWorker.register('service-worker.js').catch(() => {});
+//   });
+// }
 
 // ---------- Wait for Firebase ----------
 function whenFirebaseReady() {
