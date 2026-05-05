@@ -52,6 +52,7 @@ function renderHeader() {
     <div class="office-tabs">
       <button class="office-tab ${state.mode === 'upload' ? 'active' : ''}" data-mode="upload">Upload schedule</button>
       <button class="office-tab ${state.mode === 'export' ? 'active' : ''}" data-mode="export">Export drilled piles</button>
+      <button class="office-tab ${state.mode === 'builder-log' ? 'active' : ''}" data-mode="builder-log">Builder log</button>
     </div>
   `;
 }
@@ -124,7 +125,8 @@ async function renderJobsStep() {
         const jobSnap = await getDoc(doc(db, 'jobs', btn.dataset.jobId));
         state.selectedJob = { id: btn.dataset.jobId, ...jobSnap.data() };
         if (state.mode === 'upload') renderUploadStep();
-        else renderExportPickStep();
+        else if (state.mode === 'export') renderExportPickStep();
+        else if (state.mode === 'builder-log') renderBuilderLogStep();
       });
     });
   } catch (err) {
@@ -724,4 +726,118 @@ function renderExportDoneStep(filename) {
     </div>
   `;
   wireTabs();
+}
+
+// ============================================================
+// BUILDER LOG WORKFLOW
+// Downloads a JSON file with all done-pile data, ready for the
+// Cowork sth-piling-builder-log skill to turn into a branded PDF.
+// ============================================================
+async function renderBuilderLogStep() {
+  state.step = 'builder-log';
+
+  // Load drilled piles for this job
+  const pilesSnap = await getDocs(collection(db, 'jobs', state.selectedJob.id, 'piles'));
+  state.drilledPiles = pilesSnap.docs
+    .map(d => ({ id: d.id, ...d.data() }))
+    .filter(p => p.status === 'done');
+
+  const total = state.drilledPiles.length;
+  const totalLm = state.drilledPiles.reduce((s, p) => s + (p.actualDepth || 0), 0);
+  const totalConcrete = state.drilledPiles.reduce((s, p) => s + (p.actualConcrete || 0), 0);
+
+  let earliestDate = null, latestDate = null;
+  state.drilledPiles.forEach(p => {
+    if (p.finishedAt) {
+      const d = p.finishedAt.toDate ? p.finishedAt.toDate() : new Date(p.finishedAt);
+      if (!earliestDate || d < earliestDate) earliestDate = d;
+      if (!latestDate || d > latestDate) latestDate = d;
+    }
+  });
+
+  const dateRange = (earliestDate && latestDate) ?
+    `${earliestDate.toLocaleDateString('en-AU')} — ${latestDate.toLocaleDateString('en-AU')}` :
+    'No drilled piles';
+
+  app.innerHTML = `
+    <div class="office-shell">
+      ${renderHeader()}
+      <div class="office-body">
+        <div class="office-card">
+          <h2>${state.selectedJob.project} — ${state.selectedJob.client || ''}</h2>
+          <p style="font-size:13px;color:var(--muted);margin-bottom:18px">
+            Download a JSON file with all drilled pile data. Drop it into the job folder in Cowork,
+            then ask Claude: <i>"Generate the builder pile log for ${state.selectedJob.project}"</i>.
+          </p>
+
+          <div class="preview-summary">
+            <div class="summary-tile"><div class="summary-label">Drilled piles</div><div class="summary-value">${total}</div></div>
+            <div class="summary-tile"><div class="summary-label">Total LM</div><div class="summary-value">${totalLm.toFixed(1)}</div></div>
+            <div class="summary-tile"><div class="summary-label">Total concrete</div><div class="summary-value">${totalConcrete.toFixed(1)} m³</div></div>
+            <div class="summary-tile"><div class="summary-label">Date range</div><div class="summary-value" style="font-size:11px">${dateRange}</div></div>
+          </div>
+
+          ${total === 0 ? `
+            <div class="warning-banner">No drilled piles for this job yet. Nothing to export.</div>
+            <button class="btn ghost" id="back-btn">‹ Back to jobs</button>
+          ` : `
+            <div class="action-row">
+              <button class="btn ghost" id="back-btn">‹ Back to jobs</button>
+              <div class="spacer"></div>
+              <button class="btn" id="download-json-btn">Download builder log JSON →</button>
+            </div>
+          `}
+        </div>
+      </div>
+    </div>
+  `;
+
+  wireTabs();
+  document.getElementById('back-btn').addEventListener('click', renderJobsStep);
+  document.getElementById('download-json-btn')?.addEventListener('click', downloadBuilderLogJson);
+}
+
+function downloadBuilderLogJson() {
+  const job = state.selectedJob;
+  const piles = state.drilledPiles
+    .map(p => {
+      // Convert Firestore timestamps to ISO strings so they survive JSON
+      const out = { ...p };
+      ['startedAt', 'finishedAt', 'createdAt'].forEach(k => {
+        if (out[k] && out[k].toDate) {
+          out[k] = out[k].toDate().toISOString();
+        }
+      });
+      return out;
+    })
+    .sort((a, b) => parseInt(a.pileId) - parseInt(b.pileId));
+
+  const payload = {
+    schemaVersion: 1,
+    generatedAt: new Date().toISOString(),
+    job: {
+      id: job.id,
+      project: job.project,
+      client: job.client,
+      jobCode: job.jobCode || null,
+      address: job.address || job.project,
+      pilesTotal: job.pilesTotal || piles.length
+    },
+    summary: {
+      totalDrilled: piles.length,
+      totalLinearMetres: piles.reduce((s, p) => s + (p.actualDepth || 0), 0),
+      totalConcrete: piles.reduce((s, p) => s + (p.actualConcrete || 0), 0)
+    },
+    piles
+  };
+
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  const today = new Date().toISOString().slice(0, 10);
+  const safeName = (job.project || 'pile-log').replace(/[^a-z0-9 -]/gi, '').trim();
+  a.href = url;
+  a.download = `${safeName} - Builder Log Data ${today}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
