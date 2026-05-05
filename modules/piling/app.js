@@ -18,38 +18,34 @@ const RIGS = ['Rig 01', 'Rig 02', 'Rig 03', 'Rig 04', 'Rig 05', 'Rig 06'];
 const app = document.getElementById('app');
 
 // ============================================================
-// Router — picks the right screen based on current state + URL hash
+// Router
 // ============================================================
 function route() {
   const hash = window.location.hash.slice(1);
 
-  // Setup gate — no operator/rig means show setup
   if (!getOperator() || !getPilingRig()) {
     renderSetup();
     return;
   }
 
-  // Default: job list
   if (!hash || hash === 'jobs') {
     renderJobs();
     return;
   }
 
-  // job/{jobId} — pile list for that job
   if (hash.startsWith('job/')) {
     const jobId = hash.split('/')[1];
     renderPileList(jobId);
     return;
   }
 
-  // Fallback
   renderJobs();
 }
 
 window.addEventListener('hashchange', route);
 
 // ============================================================
-// Setup screen — operator name + rig
+// Setup screen
 // ============================================================
 function renderSetup() {
   const lastOp = getOperator();
@@ -112,7 +108,7 @@ function renderSetup() {
 }
 
 // ============================================================
-// Job picker — list of active piling jobs from Firestore
+// Job picker — reads jobs that match the existing Cartage schema
 // ============================================================
 async function renderJobs() {
   app.innerHTML = `
@@ -124,18 +120,20 @@ async function renderJobs() {
   `;
 
   try {
-    // Read all active jobs that have a piling scope
+    // Schema matches the existing Cartage PWA:
+    //   active: bool, project: str, client: str, date: str, createdAt: timestamp
+    // Plus piling-specific fields we add per job:
+    //   hasPiling: true, pilesTotal: number, pilesDrilled: number
     const jobsRef = collection(db, 'jobs');
     const q = query(
       jobsRef,
-      where('status', '==', 'active'),
+      where('active', '==', true),
       where('hasPiling', '==', true)
     );
 
-    // Use onSnapshot for live updates
     onSnapshot(q, snap => {
       const listEl = document.getElementById('job-list');
-      if (!listEl) return; // user navigated away
+      if (!listEl) return;
 
       if (snap.empty) {
         listEl.innerHTML = `
@@ -151,13 +149,14 @@ async function renderJobs() {
         const j = d.data();
         const drilled = j.pilesDrilled || 0;
         const total = j.pilesTotal || 0;
+        const progress = total > 0 ? `${drilled}/${total} piles` : 'Schedule pending';
         return `
           <button class="job-card" data-job-id="${d.id}">
-            <div class="job-code">${j.jobCode || d.id}</div>
-            <div class="job-name">${j.address || j.name || 'Unnamed job'}</div>
+            <div class="job-code">${j.jobCode || j.date || ''}</div>
+            <div class="job-name">${j.project || 'Unnamed job'}</div>
             <div class="job-meta">
               <span>${j.client || ''}</span>
-              <span class="progress">${drilled}/${total} piles</span>
+              <span class="progress">${progress}</span>
             </div>
           </button>
         `;
@@ -175,7 +174,7 @@ async function renderJobs() {
         listEl.innerHTML = `
           <div class="empty">
             <h3>Couldn't load jobs</h3>
-            <p>Check your connection and try again. If you're offline, the app will sync when you're back online.</p>
+            <p>Check your connection and try again.</p>
             <button class="btn ghost" onclick="window.location.reload()">Retry</button>
           </div>
         `;
@@ -188,7 +187,7 @@ async function renderJobs() {
 }
 
 // ============================================================
-// Pile list — placeholder for now, will be built out next
+// Pile list — placeholder
 // ============================================================
 function renderPileList(jobId) {
   app.innerHTML = `
