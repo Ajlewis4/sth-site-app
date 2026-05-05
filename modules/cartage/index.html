@@ -3,21 +3,850 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
-<meta name="theme-color" content="#2E3038">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-title" content="STH Cartage">
+<meta name="description" content="STH Piling Cartage Tracker">
+<meta name="theme-color" content="#0B0D10">
 <title>STH Cartage</title>
-<link rel="manifest" href="../../manifest.json">
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@500;600;700;800&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="../../shared/styles.css">
-<link rel="stylesheet" href="styles.css">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" type="image/png" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-tap-highlight-color:transparent; }
+  :root {
+    --bg: #0B0D10;
+    --surface: #15181E;
+    --surface-2: #1C2029;
+    --surface-3: #242935;
+    --border: #272C38;
+    --border-2: #363C4A;
+    --muted: #6B7384;
+    --muted-2: #8891A0;
+    --text: #E6E9EF;
+    --yellow: #FFD000;
+    --yellow-dim: #B99200;
+    --yellow-soft: rgba(255,208,0,0.12);
+    --green: #22C55E;
+    --red: #EF4444;
+    --pink: #F4B6D2;
+    --pink-soft: rgba(244,182,210,0.1);
+  }
+  html, body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'Inter', system-ui, sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+  body { padding-bottom: env(safe-area-inset-bottom); }
+  .mono { font-family: 'JetBrains Mono', monospace; }
+  button { font-family: inherit; }
+
+  /* ================== ROLE PICKER ================== */
+  #role-picker {
+    display: none; min-height: 100vh;
+    padding: 40px 20px; align-items: center; justify-content: center; flex-direction: column;
+    background: var(--bg);
+  }
+  #role-picker.visible { display: flex; }
+  .rp-logo { max-width: 220px; margin-bottom: 32px; filter: brightness(1.1); }
+  .rp-title { font-size: 28px; font-weight: 900; text-align: center; margin-bottom: 8px; letter-spacing: -0.02em; }
+  .rp-sub {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted); font-size: 11px; letter-spacing: 0.25em;
+    margin-bottom: 40px; text-align: center;
+  }
+  .rp-cards { display: flex; flex-direction: column; gap: 14px; width: 100%; max-width: 380px; }
+  .rp-card {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 16px; padding: 24px;
+    cursor: pointer; transition: all 0.2s;
+    color: var(--text); text-align: left;
+    display: flex; align-items: center; gap: 18px;
+  }
+  .rp-card:hover, .rp-card:active {
+    border-color: var(--yellow); transform: translateY(-1px);
+    background: var(--surface-2);
+  }
+  .rp-icon {
+    width: 52px; height: 52px; border-radius: 12px;
+    background: var(--yellow-soft); color: var(--yellow);
+    display: flex; align-items: center; justify-content: center;
+    font-size: 24px; font-weight: 900; flex-shrink: 0;
+  }
+  .rp-text-title { font-weight: 900; font-size: 18px; letter-spacing: -0.01em; }
+  .rp-text-sub {
+    font-family: 'JetBrains Mono', monospace;
+    color: var(--muted); font-size: 10px; letter-spacing: 0.2em;
+    margin-top: 4px; text-transform: uppercase;
+  }
+  .rp-footer {
+    position: fixed; bottom: 20px; left: 0; right: 0;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--muted); letter-spacing: 0.2em;
+  }
+  .back-to-launcher {
+    position: fixed; top: 20px; left: 20px;
+    color: var(--muted); text-decoration: none;
+    font-size: 12px; letter-spacing: 0.05em;
+    padding: 8px 12px; border: 1px solid var(--border);
+    border-radius: 6px; background: var(--surface);
+    transition: color 0.15s, border-color 0.15s;
+  }
+  .back-to-launcher:hover { color: var(--text); border-color: var(--border-2); }
+
+  /* ================== SHARED: HEADER / SPLASH ================== */
+  #splash-screen {
+    position: fixed; inset: 0; background: var(--bg);
+    display: flex; align-items: center; justify-content: center;
+    z-index: 9999; transition: opacity 0.4s ease;
+  }
+  #splash-screen.hidden { opacity: 0; pointer-events: none; }
+  .splash-logo { max-width: 280px; width: 70%; animation: fadeInScale 0.8s ease; filter: brightness(1.1); }
+  @keyframes fadeInScale { 0% { opacity: 0; transform: scale(0.9); } 100% { opacity: 1; transform: scale(1); } }
+
+  .header {
+    padding: 14px 16px;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+    background: var(--bg);
+    position: sticky; top: 0; z-index: 10;
+  }
+  .brand { display:flex; align-items:center; gap: 10px; cursor: pointer; }
+  .brand-logo {
+    width: 32px; height: 32px; border-radius: 6px;
+    background: var(--yellow); color: var(--bg);
+    display:flex; align-items:center; justify-content:center;
+    font-weight: 900; font-size: 18px;
+  }
+  .brand-name { font-weight: 900; font-size: 14px; letter-spacing: 0.02em; }
+  .brand-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--muted); letter-spacing: 0.25em; margin-top: 1px;
+  }
+  .pill {
+    display:flex; align-items:center; gap:6px;
+    padding: 5px 10px; border-radius: 999px; background: var(--surface);
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    letter-spacing: 0.15em; color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .pill.live .dot { background: var(--green); box-shadow: 0 0 6px var(--green); animation: pulsedot 1.8s infinite; }
+  .pill.offline .dot { background: var(--red); }
+  .pill .dot { width:6px; height:6px; border-radius:50%; }
+  @keyframes pulsedot { 0%,100%{opacity:1} 50%{opacity:0.4} }
+
+  /* ================== GATE VIEW (mobile, from v3) ================== */
+  #gate-view { display: none; max-width: 480px; margin: 0 auto; padding-bottom: 140px; }
+  #gate-view.visible { display: block; }
+
+  .job-banner {
+    padding: 20px 16px 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .job-flag {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--yellow); letter-spacing: 0.3em;
+    margin-bottom: 6px;
+  }
+  .job-title { font-size: 22px; font-weight: 900; line-height: 1.15; letter-spacing: -0.015em; }
+  .job-title.placeholder { color: var(--muted-2); font-weight: 700; font-size: 18px; }
+  .job-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 0.03em;
+  }
+
+  .setup-card {
+    margin: 14px 12px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 16px;
+  }
+  .setup-title {
+    font-weight: 800; font-size: 13px; letter-spacing: 0.1em;
+    color: var(--muted); margin-bottom: 14px;
+    font-family: 'JetBrains Mono', monospace; text-transform: uppercase;
+  }
+  .form-group { margin-bottom: 12px; }
+  .form-group:last-child { margin-bottom: 0; }
+  label {
+    display: block; font-size: 11px; font-weight: 600;
+    color: var(--muted); margin-bottom: 6px;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    font-family: 'JetBrains Mono', monospace;
+  }
+  input, select, textarea {
+    width: 100%; padding: 12px 14px;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    background: var(--surface-2);
+    color: var(--text);
+    font-size: 15px; font-weight: 600;
+    font-family: inherit;
+    transition: border-color 0.15s, background 0.15s;
+  }
+  input:focus, select:focus, textarea:focus {
+    outline: none; border-color: var(--yellow); background: var(--surface-3);
+  }
+  input::placeholder { color: var(--muted); font-weight: 500; }
+
+  .kpis {
+    display: grid; grid-template-columns: repeat(3, 1fr);
+    padding: 12px 12px; gap: 8px;
+    border-bottom: 1px solid var(--border);
+  }
+  .kpi {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 12px 10px; text-align: center;
+  }
+  .kpi-num { font-size: 28px; font-weight: 900; letter-spacing: -0.02em; line-height: 1; }
+  .kpi-num.y { color: var(--yellow); }
+  .kpi-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--muted); letter-spacing: 0.22em; margin-top: 6px;
+  }
+
+  .trucks { padding: 12px; display: flex; flex-direction: column; gap: 10px; }
+  .empty-state {
+    text-align: center; padding: 40px 20px; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace; font-size: 11px;
+    letter-spacing: 0.15em; text-transform: uppercase;
+  }
+  .empty-state .big { font-size: 40px; margin-bottom: 12px; }
+
+  .truck {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; overflow: hidden; transition: border-color 0.2s;
+  }
+  .truck.completed { border-color: rgba(34,197,94,0.35); }
+
+  .truck-head {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 16px; border-bottom: 1px solid var(--border);
+  }
+  .truck-head-text { min-width: 0; flex: 1; }
+  .truck-rego { font-size: 20px; font-weight: 900; letter-spacing: 0.04em; }
+  .truck-company {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted); letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .truck-type-chip {
+    margin-left: auto;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; font-weight: 700; letter-spacing: 0.12em;
+    padding: 5px 9px; border-radius: 6px;
+    background: var(--surface-2); color: var(--yellow);
+    border: 1px solid var(--border); white-space: nowrap;
+  }
+  .truck-type-chip.done { color: var(--green); border-color: rgba(34,197,94,0.35); }
+
+  .truck-main {
+    display: grid; grid-template-columns: auto 1fr;
+    gap: 12px; padding: 14px 16px; align-items: center;
+  }
+  .big-count {
+    font-size: 64px; font-weight: 900; letter-spacing: -0.04em; line-height: 0.9;
+    color: var(--yellow); font-variant-numeric: tabular-nums;
+    transition: transform 0.18s;
+  }
+  .truck.completed .big-count { color: var(--green); }
+  .count-side { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+  .count-label {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px;
+    letter-spacing: 0.25em; color: var(--muted);
+  }
+  .count-m3 { font-weight: 800; font-size: 20px; letter-spacing: -0.01em; color: var(--text); }
+  .count-last {
+    font-family: 'JetBrains Mono', monospace; font-size: 10px;
+    color: var(--muted); margin-top: 4px;
+  }
+  .count-last strong { color: var(--pink); font-weight: 700; }
+
+  .load-strip {
+    display: flex; gap: 4px; flex-wrap: wrap;
+    padding: 0 16px 14px;
+  }
+  .load-strip .pip {
+    font-family: 'JetBrains Mono', monospace; font-size: 9px; font-weight: 700;
+    padding: 3px 6px; border-radius: 4px;
+    background: var(--surface-2); color: var(--muted);
+    border: 1px solid var(--border);
+  }
+  .load-strip .pip.latest { background: var(--yellow); color: var(--bg); border-color: var(--yellow); }
+  .load-strip .pip.filled { background: var(--pink-soft); color: var(--pink); border-color: rgba(244,182,210,0.3); }
+
+  .truck-actions { display: grid; grid-template-columns: 3fr 1fr 1fr; }
+  .ta-btn {
+    padding: 18px 0;
+    font-weight: 900; font-size: 15px; letter-spacing: 0.05em;
+    border: none; cursor: pointer;
+    border-top: 1px solid var(--border);
+  }
+  .ta-primary { background: var(--yellow); color: var(--bg); }
+  .ta-primary:active { background: var(--yellow-dim); transform: scale(0.99); }
+  .ta-primary:disabled { background: var(--surface-2); color: var(--muted); cursor: not-allowed; }
+  .ta-secondary {
+    background: var(--surface); color: var(--muted);
+    border-left: 1px solid var(--border); font-size: 13px;
+  }
+  .ta-secondary:active { background: var(--surface-2); }
+  .ta-secondary:disabled { opacity: 0.3; cursor: not-allowed; }
+  .ta-finish {
+    background: var(--surface); color: var(--green);
+    border-left: 1px solid var(--border); font-size: 13px;
+  }
+  .ta-finish:active { background: var(--surface-2); }
+
+  .truck-done-footer {
+    padding: 14px 16px; text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.18em;
+    color: var(--green);
+    border-top: 1px solid var(--border);
+    background: rgba(34,197,94,0.06);
+  }
+  .truck-done-footer .remove {
+    margin-left: 10px; color: var(--muted); cursor: pointer;
+    text-decoration: underline;
+  }
+
+  .add-truck {
+    margin: 0 12px 12px; padding: 18px;
+    border: 1.5px dashed var(--border);
+    border-radius: 14px;
+    text-align: center; color: var(--muted);
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 11px; letter-spacing: 0.22em;
+    cursor: pointer; background: transparent;
+    width: calc(100% - 24px); transition: all 0.15s;
+  }
+  .add-truck:active { background: var(--surface); border-color: var(--yellow); color: var(--yellow); }
+  .add-truck .plus { font-size: 22px; color: var(--yellow); font-weight: 900; margin-right: 8px; font-family: inherit; }
+
+  .bb {
+    position: fixed; bottom: 0; left: 0; right: 0;
+    background: rgba(11,13,16,0.92);
+    padding: 10px 12px calc(14px + env(safe-area-inset-bottom));
+    border-top: 1px solid var(--border);
+    z-index: 20;
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+  }
+  .bb .inner { max-width: 480px; margin: 0 auto; display: flex; gap: 8px; }
+  .bb-btn {
+    flex: 1; padding: 14px;
+    border-radius: 10px;
+    border: 1px solid var(--border);
+    background: var(--surface); color: var(--text);
+    font-weight: 800; font-size: 13px; letter-spacing: 0.03em;
+    cursor: pointer;
+  }
+  .bb-btn.primary { background: var(--yellow); color: var(--bg); border-color: var(--yellow); font-weight: 900; }
+  .bb-btn.primary:active { background: var(--yellow-dim); }
+  .bb-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* ================== OFFICE VIEW (desktop editor) ================== */
+  #office-view { display: none; }
+  #office-view.visible { display: block; }
+  .office-wrap { max-width: 1400px; margin: 0 auto; padding: 0 16px 80px; }
+
+  .office-header {
+    padding: 20px 0 16px;
+    display: flex; align-items: flex-end; justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    margin-bottom: 20px; gap: 20px; flex-wrap: wrap;
+  }
+  .office-job-info .job-flag { font-size: 10px; }
+  .office-job-info .job-title { font-size: 30px; }
+
+  .office-kpis { display: flex; gap: 8px; flex-wrap: wrap; }
+  .office-kpi {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 10px; padding: 10px 16px; min-width: 90px; text-align: center;
+  }
+  .office-kpi-num { font-size: 22px; font-weight: 900; letter-spacing: -0.02em; }
+  .office-kpi-num.y { color: var(--yellow); }
+  .office-kpi-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--muted); letter-spacing: 0.18em; margin-top: 4px;
+  }
+
+  .office-toolbar {
+    display: flex; gap: 8px; align-items: center; margin-bottom: 14px; flex-wrap: wrap;
+  }
+  .office-toolbar .spacer { flex: 1; }
+  .office-btn {
+    padding: 10px 16px;
+    background: var(--surface); color: var(--text);
+    border: 1px solid var(--border); border-radius: 8px;
+    font-weight: 700; font-size: 13px; cursor: pointer;
+  }
+  .office-btn:hover { background: var(--surface-2); }
+  .office-btn.primary { background: var(--yellow); color: var(--bg); border-color: var(--yellow); font-weight: 900; }
+
+  .loads-table-wrap {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 12px; overflow: hidden;
+  }
+  .loads-table {
+    width: 100%; border-collapse: collapse; font-size: 13px;
+  }
+  .loads-table thead tr {
+    background: var(--surface-2);
+    border-bottom: 1px solid var(--border);
+  }
+  .loads-table th {
+    text-align: left; padding: 10px 8px;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.18em;
+    color: var(--muted); text-transform: uppercase;
+    white-space: nowrap;
+  }
+  .loads-table td {
+    padding: 6px 8px;
+    border-bottom: 1px solid var(--border);
+    vertical-align: middle;
+  }
+  .loads-table tr:hover td { background: rgba(255,255,255,0.02); }
+  .loads-table td.num { text-align: right; font-variant-numeric: tabular-nums; }
+  .loads-table td.mono { font-family: 'JetBrains Mono', monospace; font-size: 12px; }
+
+  .loads-table input, .loads-table select {
+    width: 100%; min-width: 80px;
+    padding: 6px 8px; font-size: 13px;
+    background: transparent; border: 1px solid transparent;
+    border-radius: 6px; color: var(--text);
+  }
+  .loads-table input:hover, .loads-table select:hover {
+    background: var(--surface-3); border-color: var(--border);
+  }
+  .loads-table input:focus, .loads-table select:focus {
+    outline: none; background: var(--surface-3); border-color: var(--yellow);
+  }
+  .loads-table .col-rego { font-weight: 900; letter-spacing: 0.04em; }
+  .loads-table .col-type { color: var(--yellow); font-weight: 700; font-size: 11px; letter-spacing: 0.1em; }
+  .loads-table .col-time { color: var(--muted); font-size: 11px; }
+  .loads-table .col-m3 { color: var(--text); font-weight: 700; }
+  .loads-table tr.truck-header {
+    background: var(--surface-2);
+  }
+  .loads-table tr.truck-header td {
+    padding: 10px 8px;
+    font-weight: 900; font-size: 13px;
+    border-bottom: 1px solid var(--border-2);
+  }
+  .loads-table .signed-pill {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.15em;
+    padding: 3px 8px; border-radius: 999px;
+    background: rgba(34,197,94,0.12); color: var(--green);
+    border: 1px solid rgba(34,197,94,0.3); margin-left: 8px;
+  }
+  .loads-table .unsigned-pill {
+    display: inline-block;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; font-weight: 700; letter-spacing: 0.15em;
+    padding: 3px 8px; border-radius: 999px;
+    background: var(--surface-3); color: var(--muted);
+    border: 1px solid var(--border); margin-left: 8px;
+  }
+
+  .flash-new { animation: flashNew 1.5s ease; }
+  @keyframes flashNew {
+    0% { background: var(--yellow-soft); }
+    100% { background: transparent; }
+  }
+
+  .no-job-setup {
+    text-align: center; padding: 60px 20px;
+    color: var(--muted);
+  }
+  .no-job-setup h2 { font-size: 22px; color: var(--text); margin-bottom: 10px; }
+  .no-job-setup p { font-size: 14px; margin-bottom: 20px; }
+
+  /* Office setup form */
+  .office-setup-form {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 14px; padding: 20px; max-width: 500px; margin: 20px auto;
+  }
+
+  /* Toast notifications */
+  .toast-container {
+    position: fixed; top: 70px; right: 20px; z-index: 2000;
+    display: flex; flex-direction: column; gap: 8px; pointer-events: none;
+  }
+  .toast {
+    background: var(--surface-2); color: var(--text);
+    padding: 10px 14px; border-radius: 10px;
+    border: 1px solid var(--border);
+    font-size: 13px; font-weight: 600;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+    animation: toastIn 0.3s ease, toastOut 0.3s ease 3.5s forwards;
+    max-width: 300px;
+  }
+  .toast.new { border-color: var(--yellow); }
+  .toast.error { border-color: var(--red); color: #FCA5A5; }
+  @keyframes toastIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+  @keyframes toastOut { to { transform: translateX(20px); opacity: 0; } }
+
+  /* ================== MODALS (shared) ================== */
+  .modal {
+    display: none; position: fixed; inset: 0;
+    background: rgba(0,0,0,0.75);
+    z-index: 1000; padding: 0;
+    backdrop-filter: blur(4px);
+    align-items: flex-end; justify-content: center;
+  }
+  @media (min-width: 600px) { .modal { align-items: center; padding: 20px; } }
+  .modal.active { display: flex; animation: fadeIn 0.2s; }
+  @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+  .modal-content {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: 20px 20px 0 0;
+    padding: 20px; width: 100%; max-width: 480px;
+    max-height: 92vh; overflow-y: auto;
+    animation: slideUp 0.25s;
+  }
+  @media (min-width: 600px) { .modal-content { border-radius: 20px; } }
+  @keyframes slideUp { from { transform: translateY(30px); opacity: 0.5; } to { transform: translateY(0); opacity: 1; } }
+
+  .modal-handle {
+    width: 40px; height: 4px; background: var(--border-2);
+    border-radius: 2px; margin: 0 auto 16px;
+  }
+  @media (min-width: 600px) { .modal-handle { display: none; } }
+  .modal-header { font-size: 20px; font-weight: 900; color: var(--text); margin-bottom: 18px; letter-spacing: -0.01em; }
+  .modal-sub {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--yellow); letter-spacing: 0.25em;
+    text-transform: uppercase; margin-bottom: 4px;
+  }
+
+  .summary-section { margin-bottom: 16px; }
+  .summary-row {
+    display: flex; justify-content: space-between;
+    padding: 10px 0; border-bottom: 1px solid var(--border);
+    font-size: 14px;
+  }
+  .summary-row:last-child { border-bottom: none; }
+  .summary-row strong { font-weight: 800; }
+
+  .modal-buttons { display: flex; gap: 8px; margin-top: 16px; }
+  .modal-btn {
+    flex: 1; padding: 14px;
+    border-radius: 10px; border: 1px solid var(--border);
+    background: var(--surface-2); color: var(--text);
+    font-weight: 700; font-size: 14px; letter-spacing: 0.03em; cursor: pointer;
+  }
+  .modal-btn.primary { background: var(--yellow); color: var(--bg); border-color: var(--yellow); font-weight: 900; }
+  .modal-btn.danger { background: transparent; color: var(--red); border-color: var(--red); }
+  .modal-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  .sig-pad-wrap {
+    background: #fff; border: 1px solid var(--border);
+    border-radius: 10px; padding: 4px; margin: 10px 0;
+  }
+  .sig-pad {
+    display: block; width: 100%; height: 180px;
+    background: #fff; touch-action: none; border-radius: 6px;
+  }
+  .sig-label {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 10px; color: var(--muted); letter-spacing: 0.2em;
+    text-align: center; margin-top: 4px; text-transform: uppercase;
+  }
+
+  .info-box {
+    background: var(--yellow-soft);
+    border: 1px solid rgba(255,208,0,0.3);
+    border-radius: 10px; padding: 12px 14px;
+    font-size: 12px; color: var(--text); line-height: 1.5;
+    margin-bottom: 14px;
+  }
+  .warn-box {
+    background: rgba(239,68,68,0.1);
+    border: 1px solid rgba(239,68,68,0.3);
+    color: #FCA5A5; border-radius: 10px;
+    padding: 12px 14px; font-size: 12px; margin-bottom: 14px;
+  }
+</style>
 </head>
 <body>
 
-<div class="app-shell" id="app">
-  <!-- Rendered by app.js -->
+<!-- Splash -->
+<div id="splash-screen">
+  <img src="logo.jpg" alt="STH Piling" class="splash-logo">
 </div>
 
+<!-- ===== Role Picker (shown first) ===== -->
+<div id="role-picker">
+  <img src="logo.jpg" alt="STH Piling" class="rp-logo">
+  <div class="rp-title">STH Cartage</div>
+  <div class="rp-sub">CHOOSE YOUR ROLE</div>
+  <div class="rp-cards">
+    <button class="rp-card" onclick="pickRole('gate')">
+      <div class="rp-icon">◎</div>
+      <div>
+        <div class="rp-text-title">Gate</div>
+        <div class="rp-text-sub">COUNT TRUCKS · MOBILE</div>
+      </div>
+    </button>
+    <button class="rp-card" onclick="pickRole('office')">
+      <div class="rp-icon">⊞</div>
+      <div>
+        <div class="rp-text-title">Office</div>
+        <div class="rp-text-sub">LIVE EDITOR · DESKTOP</div>
+      </div>
+    </button>
+  </div>
+  <div class="rp-footer">STH PILING PTY LTD</div>
+  <a href="../../" class="back-to-launcher">‹ Back to launcher</a>
+</div>
+
+<!-- ===== GATE VIEW ===== -->
+<div id="gate-view">
+  <header class="header">
+    <div class="brand" onclick="switchRole()">
+      <div class="brand-logo">S</div>
+      <div>
+        <div class="brand-name">STH CARTAGE</div>
+        <div class="brand-sub">GATE</div>
+      </div>
+    </div>
+    <div class="pill" id="sync-status"><span class="dot"></span><span id="clock">--:--</span></div>
+  </header>
+
+  <div class="job-banner" id="job-banner">
+    <div class="job-flag" id="job-flag">FILL IN JOB DETAILS BELOW</div>
+    <div class="job-title placeholder" id="job-title">No Job Active</div>
+    <div class="job-sub" id="job-sub">—</div>
+  </div>
+
+  <div class="setup-card" id="setup-card">
+    <div class="setup-title">Job Setup</div>
+    <div class="form-group">
+      <label for="job-date">Date</label>
+      <input type="date" id="job-date">
+    </div>
+    <div class="form-group">
+      <label for="client">Client</label>
+      <input type="text" id="client" placeholder="e.g. APM Group" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="project">Project</label>
+      <input type="text" id="project" placeholder="e.g. Bolton Ave, Hampton" autocomplete="off">
+    </div>
+  </div>
+
+  <div class="kpis" id="kpis" style="display:none;">
+    <div class="kpi"><div class="kpi-num y" id="stat-trucks">0</div><div class="kpi-label">TRUCKS</div></div>
+    <div class="kpi"><div class="kpi-num" id="stat-loads">0</div><div class="kpi-label">LOADS</div></div>
+    <div class="kpi"><div class="kpi-num" id="stat-m3">0</div><div class="kpi-label">m³ CARTED</div></div>
+  </div>
+
+  <div id="trucks-container" class="trucks">
+    <div class="empty-state"><div class="big">⊕</div>NO TRUCKS ADDED<br>TAP ADD TRUCK BELOW</div>
+  </div>
+
+  <button class="add-truck" onclick="addTruck()">
+    <span class="plus">+</span>ADD TRUCK
+  </button>
+</div>
+
+<!-- Bottom bar (gate only) -->
+<nav class="bb" id="bottom-bar" style="display:none;">
+  <div class="inner">
+    <button class="bb-btn primary" onclick="openModal('export-modal')">EXPORT TO REGISTER</button>
+    <button class="bb-btn" onclick="confirmReset()">RESET</button>
+  </div>
+</nav>
+
+<!-- ===== OFFICE VIEW ===== -->
+<div id="office-view">
+  <header class="header">
+    <div class="brand" onclick="switchRole()">
+      <div class="brand-logo">S</div>
+      <div>
+        <div class="brand-name">STH CARTAGE</div>
+        <div class="brand-sub">OFFICE</div>
+      </div>
+    </div>
+    <div class="pill" id="office-sync-status"><span class="dot"></span><span id="office-clock">--:--</span></div>
+  </header>
+
+  <div class="office-wrap">
+    <div id="office-setup" class="no-job-setup" style="display:none;">
+      <h2>No active job yet</h2>
+      <p>Set up the day's job — gate staff will see it sync instantly on their devices.</p>
+      <div class="office-setup-form">
+        <div class="form-group">
+          <label for="office-job-date">Date</label>
+          <input type="date" id="office-job-date">
+        </div>
+        <div class="form-group">
+          <label for="office-client">Client</label>
+          <input type="text" id="office-client" placeholder="e.g. APM Group">
+        </div>
+        <div class="form-group">
+          <label for="office-project">Project</label>
+          <input type="text" id="office-project" placeholder="e.g. Bolton Ave, Hampton">
+        </div>
+        <button class="office-btn primary" onclick="officeSaveJob()" style="width:100%; margin-top: 8px;">Start Day</button>
+      </div>
+    </div>
+
+    <div id="office-content" style="display:none;">
+      <div class="office-header">
+        <div class="office-job-info">
+          <div class="job-flag" id="office-job-flag">ACTIVE JOB</div>
+          <div class="job-title" id="office-job-title">—</div>
+          <div class="job-sub" id="office-job-sub">—</div>
+        </div>
+        <div class="office-kpis">
+          <div class="office-kpi"><div class="office-kpi-num y" id="office-stat-trucks">0</div><div class="office-kpi-label">TRUCKS</div></div>
+          <div class="office-kpi"><div class="office-kpi-num" id="office-stat-loads">0</div><div class="office-kpi-label">LOADS</div></div>
+          <div class="office-kpi"><div class="office-kpi-num" id="office-stat-m3">0</div><div class="office-kpi-label">m³</div></div>
+          <div class="office-kpi"><div class="office-kpi-num" id="office-stat-filled">0/0</div><div class="office-kpi-label">RATES FILLED</div></div>
+        </div>
+      </div>
+
+      <div class="office-toolbar">
+        <div style="font-family: 'JetBrains Mono', monospace; font-size: 11px; color: var(--muted); letter-spacing: 0.15em;">
+          EDIT MATERIAL, TIP SITE, RATE &amp; DOCKET AS TRUCKS COME IN
+        </div>
+        <div class="spacer"></div>
+        <button class="office-btn" onclick="confirmReset()">Reset Day</button>
+        <button class="office-btn primary" onclick="openModal('export-modal')">Export Register</button>
+      </div>
+
+      <div class="loads-table-wrap">
+        <table class="loads-table">
+          <thead>
+            <tr>
+              <th>TIME</th>
+              <th>REGO</th>
+              <th>TYPE</th>
+              <th>COMPANY</th>
+              <th>EXP/IMP</th>
+              <th>MATERIAL</th>
+              <th>TIP SITE</th>
+              <th>DOCKET #</th>
+              <th>RATE</th>
+              <th>INVOICE #</th>
+              <th class="num">m³</th>
+              <th class="num">COST</th>
+            </tr>
+          </thead>
+          <tbody id="office-rows">
+            <tr><td colspan="12" style="text-align:center; padding:40px; color:var(--muted);">Waiting for gate data…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast container -->
+<div class="toast-container" id="toasts"></div>
+
+<!-- ===== MODALS ===== -->
+<div id="add-truck-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-handle"></div>
+    <div class="modal-sub">NEW TRUCK</div>
+    <div class="modal-header">Add Truck</div>
+    <div class="form-group">
+      <label for="truck-type">Truck Type</label>
+      <select id="truck-type">
+        <option value="">Select type...</option>
+        <option value="Tandem">Tandem · 10m³ / load</option>
+        <option value="TT">Truck &amp; Trailer · 22m³ / load</option>
+        <option value="Quad">Quad · 25m³ / load</option>
+      </select>
+    </div>
+    <div class="form-group">
+      <label for="truck-rego">Registration</label>
+      <input type="text" id="truck-rego" placeholder="e.g. 1KX4AP" style="text-transform: uppercase;" autocomplete="off">
+    </div>
+    <div class="form-group">
+      <label for="truck-company">Cartage Company (optional)</label>
+      <input type="text" id="truck-company" placeholder="e.g. Hanson Transport" autocomplete="off">
+    </div>
+    <div class="modal-buttons">
+      <button class="modal-btn danger" onclick="closeModal('add-truck-modal')">Cancel</button>
+      <button class="modal-btn primary" onclick="saveTruck()">Add Truck</button>
+    </div>
+  </div>
+</div>
+
+<div id="driver-signature-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-handle"></div>
+    <div class="modal-sub">FINISH &amp; SIGN</div>
+    <div class="modal-header">Driver Signature</div>
+    <div id="driver-summary" class="summary-section"></div>
+    <div class="sig-pad-wrap"><canvas id="driver-signature-pad" class="sig-pad"></canvas></div>
+    <div class="sig-label">SIGN WITH FINGER OR STYLUS</div>
+    <div class="modal-buttons">
+      <button class="modal-btn" onclick="clearSignature()">Clear</button>
+      <button class="modal-btn danger" onclick="closeModal('driver-signature-modal')">Cancel</button>
+      <button class="modal-btn primary" onclick="saveDriverSignature()">Save</button>
+    </div>
+  </div>
+</div>
+
+<div id="export-modal" class="modal">
+  <div class="modal-content">
+    <div class="modal-handle"></div>
+    <div class="modal-sub">END OF DAY</div>
+    <div class="modal-header">Export to Register</div>
+    <div class="info-box">
+      Downloads an Excel file formatted for the STH Cartage Register with all gate data and any details Lucy has filled in.
+    </div>
+    <div id="export-summary" class="summary-section"></div>
+    <div class="modal-buttons">
+      <button class="modal-btn danger" onclick="closeModal('export-modal')">Cancel</button>
+      <button class="modal-btn primary" onclick="exportRegister()">Download</button>
+    </div>
+  </div>
+</div>
+
+<!-- Firebase + app scripts -->
+<script type="module">
+  // Inlined Firebase init — replaces the standalone firebase-config.js
+  // Uses the same sth-cartage project (shared with the Piling module)
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getFirestore, collection, doc, setDoc, updateDoc, deleteDoc,
+    onSnapshot, query, where, orderBy, serverTimestamp, writeBatch, getDocs
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  const firebaseConfig = {
+    apiKey: "AIzaSyDmUGL8Tyfy74OMjgaBZlFK-PTFG3AYYK0",
+    authDomain: "sth-cartage.firebaseapp.com",
+    projectId: "sth-cartage",
+    storageBucket: "sth-cartage.firebasestorage.app",
+    messagingSenderId: "613314698438",
+    appId: "1:613314698438:web:6acb8a91215b5a8efe0bc7"
+  };
+
+  const app = initializeApp(firebaseConfig);
+  const db = getFirestore(app);
+
+  window.sthDB = {
+    db, collection, doc, setDoc, updateDoc, deleteDoc,
+    onSnapshot, query, where, orderBy, serverTimestamp, writeBatch, getDocs,
+    ready: true
+  };
+  window.dispatchEvent(new CustomEvent('firebase-ready'));
+  console.log('[Firebase] initialized:', firebaseConfig.projectId);
+</script>
+<script src="xlsx.full.min.js"></script>
 <script type="module" src="app.js"></script>
 </body>
 </html>
