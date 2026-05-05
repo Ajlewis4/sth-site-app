@@ -172,13 +172,111 @@
   color:var(--muted);
 }
 
-/* Office tools link at bottom of job picker */
-.office-link-row{
+/* ============================================================
+   Role picker (first screen when entering Piling)
+   ============================================================ */
+.role-picker{
+  background:var(--charcoal);
+  color:#fff;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  padding:40px 20px 80px;
+  position:relative;
+}
+.role-picker .role-back{
+  position:absolute;
+  top:18px;
+  left:20px;
+  font-size:11px;
+  letter-spacing:.06em;
+  text-transform:uppercase;
+  color:#bdbfc6;
+  font-weight:600;
+}
+.role-picker .role-back:hover{color:#fff}
+
+.role-title{
+  font-size:14px;
+  font-weight:700;
+  letter-spacing:.24em;
+  color:var(--yellow);
+  margin-bottom:6px;
+}
+.role-sub{
+  font-size:13px;
+  color:#bdbfc6;
+  margin-bottom:36px;
+}
+
+.role-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:14px;
+  width:100%;
+  max-width:480px;
+}
+@media (max-width:520px){
+  .role-grid{grid-template-columns:1fr}
+}
+.role-card{
+  background:var(--charcoal-2);
+  border:1px solid var(--charcoal-3);
+  padding:32px 18px 26px;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  cursor:pointer;
+  transition:border-color .15s, transform .1s;
+  text-align:center;
+  min-height:200px;
+}
+.role-card:hover{border-color:var(--yellow)}
+.role-card:active{transform:translateY(1px)}
+
+.role-icon{
+  width:auto;
+  height:56px;
+  display:block;
+  margin-bottom:18px;
+}
+.role-card[data-role="operator"] .role-icon{height:60px}
+
+.role-label{
+  font-size:18px;
+  font-weight:800;
+  letter-spacing:.06em;
+  color:#fff;
+  text-transform:uppercase;
+  margin-bottom:4px;
+}
+.role-desc{
+  font-size:12px;
+  color:#bdbfc6;
+  font-weight:500;
+}
+
+.role-footer{
+  position:absolute;
+  bottom:24px;
+  left:0;
+  right:0;
+  text-align:center;
+  font-family:var(--mono);
+  font-size:9px;
+  letter-spacing:.2em;
+  color:#6b6e75;
+}
+
+/* "Switch to Office role" link at the bottom of the operator job picker */
+.role-switch-row{
   padding:24px 18px;
   text-align:center;
   margin-top:auto;
 }
-.office-link{
+.role-switch-link{
   font-size:11px;
   letter-spacing:.08em;
   text-transform:uppercase;
@@ -186,11 +284,11 @@
   color:var(--muted);
   border:1px solid var(--line-2);
   padding:10px 18px;
-  display:inline-block;
   background:var(--paper);
+  cursor:pointer;
   transition:border-color .15s, color .15s;
 }
-.office-link:hover{
+.role-switch-link:hover{
   border-color:var(--charcoal);
   color:var(--ink);
 }

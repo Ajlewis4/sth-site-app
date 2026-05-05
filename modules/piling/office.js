@@ -47,6 +47,7 @@ function renderHeader() {
         <div class="crumb"><a href="../../" style="color:#bdbfc6">← Launcher</a></div>
         <h1>STH Piling — Office</h1>
       </div>
+      <button id="switch-to-operator" class="badge-switch" title="Switch to operator role">Switch to Operator</button>
       <span class="badge">Office</span>
     </div>
     <div class="office-tabs">
@@ -55,6 +56,17 @@ function renderHeader() {
       <button class="office-tab ${state.mode === 'builder-log' ? 'active' : ''}" data-mode="builder-log">Builder log</button>
     </div>
   `;
+}
+
+function wireSwitchToOperator() {
+  const btn = document.getElementById('switch-to-operator');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    if (confirm('Switch to Operator role?')) {
+      localStorage.setItem('sth-piling-role', 'operator');
+      window.location.href = './';
+    }
+  });
 }
 
 function wireTabs() {
@@ -71,6 +83,7 @@ function wireTabs() {
       renderJobsStep();
     });
   });
+  wireSwitchToOperator();
 }
 
 // ============================================================

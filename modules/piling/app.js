@@ -16,6 +16,12 @@ import {
 
 const RIGS = ['Rig 01', 'Rig 02', 'Rig 03', 'Rig 04', 'Rig 05', 'Rig 06'];
 
+// Role: 'operator' | 'office'  (persists in localStorage like Cartage's role picker)
+const ROLE_KEY = 'sth-piling-role';
+function getRole() { return localStorage.getItem(ROLE_KEY) || ''; }
+function setRole(r) { localStorage.setItem(ROLE_KEY, r); }
+function clearRole() { localStorage.removeItem(ROLE_KEY); }
+
 const app = document.getElementById('app');
 let activeTab = 'todo';
 
@@ -25,6 +31,19 @@ let activeTab = 'todo';
 function route() {
   const hash = window.location.hash.slice(1);
 
+  // No role chosen yet — show role picker
+  if (!getRole()) {
+    renderRolePicker();
+    return;
+  }
+
+  // Office role → bounce to office.html
+  if (getRole() === 'office') {
+    window.location.replace('office.html');
+    return;
+  }
+
+  // From here on, role is 'operator'
   if (!getOperator() || !getPilingRig()) {
     renderSetup();
     return;
@@ -52,6 +71,50 @@ function route() {
 }
 
 window.addEventListener('hashchange', route);
+
+// ============================================================
+// Role picker — first thing operators/office see when entering Piling
+// ============================================================
+function renderRolePicker() {
+  app.innerHTML = `
+    <div class="role-picker">
+      <a href="../../" class="role-back">‹ Back to launcher</a>
+      <div class="role-title">PILING</div>
+      <div class="role-sub">Choose your role to continue</div>
+
+      <div class="role-grid">
+        <button class="role-card" data-role="operator">
+          <svg class="role-icon" viewBox="0 0 12 40" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <path d="M 4 0 L 8 0 L 8 32 L 11 32 L 6 40 L 1 32 L 4 32 Z" fill="#F5C800"/>
+            <path d="M 4 4 Q 11 10, 4 16 Q 11 22, 4 28" stroke="#2E3038" stroke-width="2.5" fill="none" stroke-linecap="round"/>
+          </svg>
+          <div class="role-label">Operator</div>
+          <div class="role-desc">Drilling on site</div>
+        </button>
+
+        <button class="role-card" data-role="office">
+          <svg class="role-icon" viewBox="0 0 36 36" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+            <rect x="6" y="10" width="24" height="20" stroke="#F5C800" stroke-width="2.4" fill="none"/>
+            <path d="M 14 10 L 14 6 L 22 6 L 22 10" stroke="#F5C800" stroke-width="2.4" fill="none"/>
+            <line x1="6" y1="20" x2="30" y2="20" stroke="#F5C800" stroke-width="2.4"/>
+            <rect x="16" y="18" width="4" height="4" fill="#F5C800"/>
+          </svg>
+          <div class="role-label">Office</div>
+          <div class="role-desc">Schedules &amp; exports</div>
+        </button>
+      </div>
+
+      <div class="role-footer">STH PILING PTY LTD</div>
+    </div>
+  `;
+
+  document.querySelectorAll('.role-card').forEach(btn => {
+    btn.addEventListener('click', () => {
+      setRole(btn.dataset.role);
+      route();
+    });
+  });
+}
 
 // ============================================================
 // Setup screen
@@ -137,8 +200,8 @@ async function renderJobs() {
     <div class="job-list" id="job-list">
       <div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Loading jobs…</div>
     </div>
-    <div class="office-link-row">
-      <a href="office.html" class="office-link">Office tools →</a>
+    <div class="role-switch-row">
+      <button class="role-switch-link" id="role-switch">Switch to Office role →</button>
     </div>
   `;
 
@@ -146,6 +209,13 @@ async function renderJobs() {
     if (confirm('Switch operator/rig? Your current session will be cleared.')) {
       localStorage.removeItem('sth_operator_name');
       localStorage.removeItem('sth_piling_rig');
+      route();
+    }
+  });
+
+  document.getElementById('role-switch').addEventListener('click', () => {
+    if (confirm('Switch to Office role?')) {
+      clearRole();
       route();
     }
   });
@@ -266,8 +336,7 @@ async function renderPileList(jobId) {
       listEl.innerHTML = `
         <div class="empty">
           <h3>No piles in schedule yet</h3>
-          <p>Office hasn't uploaded the pile schedule. Use Office tools to upload an xlsx schedule.</p>
-          <a href="office.html" class="btn ghost">Office tools →</a>
+          <p>Office hasn't uploaded the pile schedule for this job. Contact Brent or Lucy.</p>
         </div>
       `;
       return;
