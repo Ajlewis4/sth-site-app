@@ -197,6 +197,9 @@ async function renderJobs() {
       <button class="op-switch" id="op-switch">Switch</button>
     </div>
     <div class="section-label">Active jobs</div>
+    <div class="search-row">
+      <input type="text" id="job-search" class="search-input" placeholder="Search jobs…" autocomplete="off" />
+    </div>
     <div class="job-list" id="job-list">
       <div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Loading jobs…</div>
     </div>
@@ -233,6 +236,7 @@ async function renderJobs() {
       if (!listEl) return;
 
       if (snap.empty) {
+        window._currentJobs = [];
         listEl.innerHTML = `
           <div class="empty">
             <h3>No active piling jobs</h3>
@@ -242,28 +246,9 @@ async function renderJobs() {
         return;
       }
 
-      listEl.innerHTML = snap.docs.map(d => {
-        const j = d.data();
-        const drilled = j.pilesDrilled || 0;
-        const total = j.pilesTotal || 0;
-        const progress = total > 0 ? `${drilled}/${total} piles` : 'Schedule pending';
-        return `
-          <button class="job-card" data-job-id="${d.id}">
-            <div class="job-code">${j.jobCode || j.date || ''}</div>
-            <div class="job-name">${j.project || 'Unnamed job'}</div>
-            <div class="job-meta">
-              <span>${j.client || ''}</span>
-              <span class="progress">${progress}</span>
-            </div>
-          </button>
-        `;
-      }).join('');
-
-      document.querySelectorAll('.job-card').forEach(card => {
-        card.addEventListener('click', () => {
-          window.location.hash = `job/${card.dataset.jobId}`;
-        });
-      });
+      // Cache jobs so the search box can re-filter without re-querying Firestore
+      window._currentJobs = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      renderJobsList();
     }, err => {
       console.error('Failed to load jobs:', err);
       const listEl = document.getElementById('job-list');
@@ -281,6 +266,59 @@ async function renderJobs() {
     console.error(err);
     toast('Error loading jobs');
   }
+
+  // Wire search input — filters the cached jobs list
+  const searchInput = document.getElementById('job-search');
+  if (searchInput) {
+    searchInput.addEventListener('input', () => renderJobsList());
+  }
+}
+
+// Render the (filtered) jobs list from window._currentJobs
+function renderJobsList() {
+  const listEl = document.getElementById('job-list');
+  if (!listEl) return;
+
+  const jobs = window._currentJobs || [];
+  const searchInput = document.getElementById('job-search');
+  const term = (searchInput?.value || '').trim().toLowerCase();
+
+  const filtered = jobs.filter(j => {
+    if (!term) return true;
+    const haystack = [j.project, j.client, j.jobCode, j.date].filter(Boolean).join(' ').toLowerCase();
+    return haystack.includes(term);
+  });
+
+  if (filtered.length === 0) {
+    listEl.innerHTML = `
+      <div class="empty">
+        <p style="margin-top:30px;color:var(--muted)">No jobs match "${term}"</p>
+      </div>
+    `;
+    return;
+  }
+
+  listEl.innerHTML = filtered.map(j => {
+    const drilled = j.pilesDrilled || 0;
+    const total = j.pilesTotal || 0;
+    const progress = total > 0 ? `${drilled}/${total} piles` : 'Schedule pending';
+    return `
+      <button class="job-card" data-job-id="${j.id}">
+        <div class="job-code">${j.jobCode || j.date || ''}</div>
+        <div class="job-name">${j.project || 'Unnamed job'}</div>
+        <div class="job-meta">
+          <span>${j.client || ''}</span>
+          <span class="progress">${progress}</span>
+        </div>
+      </button>
+    `;
+  }).join('');
+
+  listEl.querySelectorAll('.job-card').forEach(card => {
+    card.addEventListener('click', () => {
+      window.location.hash = `job/${card.dataset.jobId}`;
+    });
+  });
 }
 
 // ============================================================
@@ -312,6 +350,9 @@ async function renderPileList(jobId) {
       <button class="pile-tab ${activeTab === 'todo' ? 'active' : ''}" data-tab="todo">To do <span class="tab-count" id="count-todo">0</span></button>
       <button class="pile-tab ${activeTab === 'live' ? 'active' : ''}" data-tab="live">Live <span class="tab-count" id="count-live">0</span></button>
       <button class="pile-tab ${activeTab === 'done' ? 'active' : ''}" data-tab="done">Done <span class="tab-count" id="count-done">0</span></button>
+    </div>
+    <div class="search-row">
+      <input type="text" id="pile-search" class="search-input" placeholder="Search pile number…" autocomplete="off" inputmode="numeric" />
     </div>
     <div class="pile-list" id="pile-list">
       <div style="padding:30px;text-align:center;color:var(--muted);font-size:13px">Loading piles…</div>
@@ -353,6 +394,12 @@ async function renderPileList(jobId) {
 
     refreshPileListByTab(jobId);
   });
+
+  // Wire pile search — filters within the active tab
+  const pileSearchInput = document.getElementById('pile-search');
+  if (pileSearchInput) {
+    pileSearchInput.addEventListener('input', () => refreshPileListByTab(jobId));
+  }
 }
 
 function refreshPileListByTab(jobId) {
@@ -360,15 +407,31 @@ function refreshPileListByTab(jobId) {
   if (!listEl) return;
   const piles = window._currentPiles || [];
 
+  // Read search term from the input (if present)
+  const searchInput = document.getElementById('pile-search');
+  const term = (searchInput?.value || '').trim().toLowerCase();
+
   const filtered = piles
     .filter(p => p.status === activeTab)
-    .sort((a, b) => (a.pileId || '').localeCompare(b.pileId || ''));
+    .filter(p => {
+      if (!term) return true;
+      // Match on pile id (most common: operator types "47") or pile type
+      const haystack = [p.pileId, p.pileType, p.type].filter(Boolean).join(' ').toLowerCase();
+      return haystack.includes(term);
+    })
+    .sort((a, b) => {
+      // Sort numerically if both are numbers, otherwise alphabetically
+      const aNum = parseInt(a.pileId, 10);
+      const bNum = parseInt(b.pileId, 10);
+      if (!isNaN(aNum) && !isNaN(bNum)) return aNum - bNum;
+      return (a.pileId || '').localeCompare(b.pileId || '');
+    });
 
   if (filtered.length === 0) {
     const labels = {
-      todo: 'No piles to do — start one from the schedule',
-      live: 'No piles in progress',
-      done: 'No piles completed yet'
+      todo: term ? `No to-do piles match "${term}"` : 'No piles to do — start one from the schedule',
+      live: term ? `No live piles match "${term}"` : 'No piles in progress',
+      done: term ? `No done piles match "${term}"` : 'No piles completed yet'
     };
     listEl.innerHTML = `<div class="empty"><p style="margin-top:30px;color:var(--muted)">${labels[activeTab]}</p></div>`;
     return;

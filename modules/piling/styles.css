@@ -172,6 +172,29 @@
   color:var(--muted);
 }
 
+/* Search input row — used by both job picker and pile list */
+.search-row{
+  padding:8px 14px 12px;
+  background:var(--paper);
+}
+.search-input{
+  width:100%;
+  padding:12px 14px;
+  font-size:15px;
+  font-weight:500;
+  background:#fafafa;
+  border:1px solid var(--line-2);
+  outline:none;
+  color:var(--ink);
+  transition:border-color .15s ease, background .15s ease;
+  font-family:var(--sans);
+}
+.search-input::placeholder{color:var(--muted);font-weight:400}
+.search-input:focus{
+  border-color:var(--charcoal);
+  background:var(--paper);
+}
+
 /* ============================================================
    Role picker (first screen when entering Piling)
    ============================================================ */
